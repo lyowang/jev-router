@@ -54,7 +54,12 @@ export function sanitizeSchema(node) {
  */
 export function newTurnPrompt(body) {
   if (!Array.isArray(body?.tools) || body.tools.length === 0) return null; // auxiliary call
-  const last = body?.messages?.[body.messages.length - 1];
+  // Newer Claude Code versions append hook output (e.g. SessionStart context) as trailing
+  // `system` messages after the user's prompt, so look past them for the real turn.
+  const messages = Array.isArray(body?.messages) ? body.messages : [];
+  let i = messages.length - 1;
+  while (i >= 0 && messages[i]?.role === "system") i--;
+  const last = messages[i];
   if (!last || last.role !== "user") return null;
   let text;
   if (typeof last.content === "string") {
